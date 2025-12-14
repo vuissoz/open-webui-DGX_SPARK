@@ -23,6 +23,15 @@ Docker Compose bundle that provisions an Ollama runtime alongside Open WebUI, wi
    ```bash
    docker compose down
    ```
+6. **GPU users:** Inspect the Ollama logs for the line `ggml_cuda_init: found` to confirm CUDA is active. On DGX/Grace systems `nvidia-smi` often fails even though CUDA works, so the logs are the source of truth.
+
+### GPU configuration
+- `docker-compose.yml` sets `CUDA_VISIBLE_DEVICES`, `NVIDIA_VISIBLE_DEVICES`, and `NVIDIA_DRIVER_CAPABILITIES` for the `ollama` service. Override them in your shell when you need to target a specific device:
+  ```bash
+  export CUDA_VISIBLE_DEVICES=1
+  docker compose up -d
+  ```
+- If the host wipes `CUDA_VISIBLE_DEVICES`, Ollama falls back to CPU. `docker compose logs ollama | grep ggml_cuda_init` quickly shows whether GPUs are still visible.
 
 ## Managing Ollama Models
 - Run the Ollama CLI inside the container named `ollama`:
@@ -52,10 +61,11 @@ Docker Compose bundle that provisions an Ollama runtime alongside Open WebUI, wi
 Back up these folders before upgrading images or pruning containers.
 
 ## Updating
-Pull the latest images and restart:
+Perform a clean restart so new environment variables are applied:
 ```bash
+docker compose down
 docker compose pull
-docker compose up -d
+docker compose up -d --force-recreate
 ```
 
 ## Troubleshooting
